@@ -1,18 +1,7 @@
-CREATE TABLE Class (
-    ClassID INT PRIMARY KEY,
-    Name VARCHAR(10),
-)
-
-CREATE TABLE Section (
-    SectionID INT PRIMARY KEY,
-    StaffID INT REFERENCES Staff(StaffID),
-    SubjectID INT REFERENCES Subject(SubjectID)
-);
-
 CREATE TABLE Staff (
     StaffID INT PRIMARY KEY,
-    Name VARCHAR(50),
-    ClassId INT FOREIGN KEY REFERENCES Class(ClassID)
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50)
 );
 
 CREATE TABLE Salary (
@@ -23,38 +12,63 @@ CREATE TABLE Salary (
     FOREIGN KEY (StaffID) REFERENCES Staff(StaffID)
 );
 
-CREATE TABLE Student (
-    RollNo VARCHAR(40) PRIMARY KEY ,
-    FirstName VARCHAR(50),
-    LastName VARCHAR(50),
-    SectionID INT FOREIGN KEY REFERENCES Section(SectionID),
-    ClassID INT FOREIGN KEY REFERENCES Class(ClassID)
+CREATE TABLE Class (
+    ClassID INT PRIMARY KEY,
+    Title VARCHAR(20),
+    StaffID INT FOREIGN KEY references Staff(StaffID)
 );
 
 CREATE TABLE Subject (
     SubjectID INT PRIMARY KEY,
-    Name VARCHAR(40)
+    Title VARCHAR(40)
+);
+
+CREATE TABLE Section (
+    SectionID INT PRIMARY KEY ,
+    Title VARCHAR(40)
 );
 
 CREATE TABLE Room (
-    RoomID INT PRIMARY KEY,
-    Section VARCHAR(10),
-    RoomNo VARCHAR(10),
+    RoomID INT PRIMARY KEY ,
+    Room_number INT,
     RoomType VARCHAR(20),
-    ClassID INT FOREIGN KEY REFERENCES Class(ClassID),
-    UNIQUE (Section, RoomNo),
+    ClassID INT REFERENCES Class(ClassID),
+    SectionID INT REFERENCES Section(SectionID),
     CHECK (RoomType IN ('classroom', 'laboratory'))
 );
 
+CREATE TABLE Student (
+    RollNo INT IDENTITY(1, 1) PRIMARY KEY ,
+    FirstName VARCHAR(40),
+    LastName VARCHAR(40),
+    SectionID INT references Section(SectionID),
+    ClassID INT references Class(ClassID)
+);
+
 CREATE TABLE Fee (
-    FeeID INT PRIMARY KEY,
-    RollNo VARCHAR(40),
+    FeeID INT IDENTITY(1, 1) PRIMARY KEY,
     Amount INT,
-    DatePaid DATE,
-    FOREIGN KEY (RollNo) REFERENCES Student(RollNo)
+    DateTime DATE,
+    Status VARCHAR(10),
+    RollNo INT FOREIGN KEY REFERENCES Student(RollNo),
+    CHECK (Status IN ('PAID', 'WAITING'))
 );
 
 
+CREATE TABLE Schedule (
+    ScheduleID INT IDENTITY (1, 1) PRIMARY KEY ,
+    StartTime date,
+    EndTime date,
+    RoomID INT FOREIGN KEY REFERENCES Room(RoomID),
+    ClassID INT FOREIGN KEY REFERENCES Class(ClassID),
+    SubjectID INT FOREIGN KEY REFERENCES Subject(SubjectID)
+);
 
+CREATE TABLE SectionSubjectStaff (
+    SectionID INT FOREIGN KEY REFERENCES Section(SectionID),
+    SubjectID INT FOREIGN KEY REFERENCES Subject(SubjectID),
+    StaffID INT FOREIGN KEY references Staff(StaffID),
+    PRIMARY KEY (SectionID, SubjectID, StaffID)
+);
 
 
