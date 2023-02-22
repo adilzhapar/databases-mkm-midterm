@@ -58,8 +58,8 @@ CREATE TABLE Fee (
 
 CREATE TABLE Schedule (
     ScheduleID INT IDENTITY (1, 1) PRIMARY KEY ,
-    StartTime date,
-    EndTime date,
+    StartTime datetime,
+    EndTime datetime,
     RoomID INT FOREIGN KEY REFERENCES Room(RoomID),
     ClassID INT FOREIGN KEY REFERENCES Class(ClassID),
     SubjectID INT FOREIGN KEY REFERENCES Subject(SubjectID)
