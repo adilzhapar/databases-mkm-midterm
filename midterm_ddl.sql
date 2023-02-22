@@ -1,11 +1,12 @@
 CREATE TABLE Staff (
-    StaffID INT PRIMARY KEY,
+    StaffID INT IDENTITY(1, 1) PRIMARY KEY,
     FirstName VARCHAR(50),
     LastName VARCHAR(50)
 );
 
+
 CREATE TABLE Salary (
-    SalaryID INT PRIMARY KEY,
+    SalaryID INT IDENTITY(1, 1) PRIMARY KEY,
     StaffID INT,
     Amount INT,
     DatePaid DATE,
@@ -13,23 +14,23 @@ CREATE TABLE Salary (
 );
 
 CREATE TABLE Class (
-    ClassID INT PRIMARY KEY,
+    ClassID INT IDENTITY(1, 1) PRIMARY KEY,
     Title VARCHAR(20),
     StaffID INT FOREIGN KEY references Staff(StaffID)
 );
 
 CREATE TABLE Subject (
-    SubjectID INT PRIMARY KEY,
+    SubjectID INT IDENTITY(1, 1) PRIMARY KEY,
     Title VARCHAR(40)
 );
 
 CREATE TABLE Section (
-    SectionID INT PRIMARY KEY ,
+    SectionID INT IDENTITY(1, 1) PRIMARY KEY ,
     Title VARCHAR(40)
 );
 
 CREATE TABLE Room (
-    RoomID INT PRIMARY KEY ,
+    RoomID INT IDENTITY(1, 1) PRIMARY KEY ,
     Room_number INT,
     RoomType VARCHAR(20),
     ClassID INT REFERENCES Class(ClassID),
