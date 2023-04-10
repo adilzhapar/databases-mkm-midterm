@@ -54,3 +54,23 @@ INSERT INTO Schedule VALUES ('20230222 10:00:00 AM', '20230222 16:00:00 PM', 3, 
 INSERT INTO Schedule VALUES ('20230222 16:00:00 PM', '20230222 18:00:00 PM', 3, 3, 4);
 INSERT INTO Schedule VALUES ('20230222 9:00:00 AM', '20230222 11:00:00 AM', 4, 4, 4);
 INSERT INTO Schedule VALUES ('20230222 13:00:00 PM', '20230222 15:00:00 PM', 4, 3, 4);
+
+
+SELECT * FROM Student
+    join Class C on Student.ClassID = C.ClassID
+join Staff S on S.StaffID = C.StaffID AND C.StaffID = 2;
+
+SELECT *
+FROM Staff
+    INNER JOIN SectionSubjectStaff SSS on Staff.StaffID = SSS.StaffID
+    INNER JOIN Subject S on SSS.SubjectID = S.SubjectID
+
+SELECT Staff.FirstName, Staff.LastName, Sj.title
+FROM Staff
+    INNER JOIN Class C on Staff.StaffID = C.StaffID
+    INNER JOIN Schedule S on C.ClassID = S.ClassID
+    INNER JOIN Subject Sj ON S.SubjectID = Sj.SubjectID
+
+SELECT FirstName,LastName, Title, StartTime, EndTime, RoomID FROM Student
+    INNER JOIN Schedule S on Student.ClassID = S.ClassID
+    INNER JOIN Subject S2 on S.SubjectID = S2.SubjectID
