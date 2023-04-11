@@ -55,6 +55,15 @@ INSERT INTO Schedule VALUES ('20230222 16:00:00 PM', '20230222 18:00:00 PM', 3, 
 INSERT INTO Schedule VALUES ('20230222 9:00:00 AM', '20230222 11:00:00 AM', 4, 4, 4);
 INSERT INTO Schedule VALUES ('20230222 13:00:00 PM', '20230222 15:00:00 PM', 4, 3, 4);
 
+INSERT INTO SectionSubjectStaff VALUES (1, 1, 1);
+INSERT INTO SectionSubjectStaff VALUES (2, 2, 2);
+INSERT INTO SectionSubjectStaff VALUES (3, 3, 3);
+INSERT INTO SectionSubjectStaff VALUES (4, 4, 4);
+INSERT INTO SectionSubjectStaff VALUES (1, 2, 4);
+INSERT INTO SectionSubjectStaff VALUES (1, 3, 1);
+INSERT INTO SectionSubjectStaff VALUES (2, 1, 2);
+INSERT INTO SectionSubjectStaff VALUES (3, 4, 2);
+
 
 SELECT * FROM Student
     join Class C on Student.ClassID = C.ClassID
