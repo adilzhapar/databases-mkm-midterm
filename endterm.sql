@@ -10,7 +10,7 @@ BEGIN
     IF @MaxAmount IS NULL
     BEGIN
         -- Set new fee amount to a default of 100 if there are no existing fees
-        SET @MaxAmount = 100
+        SET @MaxAmount = 1000000
     END
 
     RETURN @MaxAmount
@@ -79,10 +79,90 @@ end
 -- EXEC CheckPotentialStudentResult @id=1;
 
 
-SELECT s.FirstName, s.LastName, sub.Title AS SubjectTitle
+SELECT s.FirstName, s.LastName, sub.Title AS SubjectTitle, sub.SubjectID
 FROM Student s
 JOIN SectionSubjectStaff sss ON s.SectionID = sss.SectionID
 JOIN Subject sub ON sss.SubjectID = sub.SubjectID
-WHERE s.RollNo = 2;
+WHERE s.RollNo = 3;
 
 
+-- 4.2
+CREATE TABLE ExamResult (
+    ResultID INT IDENTITY(1, 1) PRIMARY KEY,
+    RollNo INT FOREIGN KEY REFERENCES Student(RollNo),
+    SubjectID INT FOREIGN KEY REFERENCES Subject(SubjectID),
+    ExamDate DATETIME,
+    Score FLOAT
+);
+
+INSERT INTO ExamResult VALUES (1, 1, '2023-04-12', 90);
+INSERT INTO ExamResult VALUES (1, 2, '2023-04-12', 95);
+INSERT INTO ExamResult VALUES (1, 3, '2023-04-12', 100);
+
+INSERT INTO ExamResult VALUES (2, 1, '2023-04-12', 70);
+INSERT INTO ExamResult VALUES (2, 2, '2023-04-12', 90);
+INSERT INTO ExamResult VALUES (2, 3, '2023-04-12', 88);
+
+
+INSERT INTO ExamResult VALUES (3, 1, '2023-04-12', 100);
+INSERT INTO ExamResult VALUES (3, 2, '2023-04-12', 58);
+
+
+ALTER TABLE Student
+ADD ExamStatus VARCHAR(20)
+CHECK (ExamStatus in ('not started', 'pass', 'fail'));
+
+
+CREATE FUNCTION StudentAllExamResults(@RollNo INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @result INT
+    DECLARE @minResult INT = (SELECT MIN(Score) FROM ExamResult WHERE RollNo=@RollNo);
+    IF (@minResult < 75)
+        SET @result = 0
+    ELSE
+        SET @result = 1
+    RETURN @result
+end;
+
+
+CREATE PROCEDURE SetStudentExamStatus
+    @RollNo INT
+AS
+BEGIN
+    DECLARE @ExamStatus VARCHAR(20)
+    DECLARE @result INT = (dbo.StudentAllExamResults(@RollNo));
+    if (@result = 1)
+        set @ExamStatus = 'pass'
+    else
+        set @ExamStatus = 'fail'
+    UPDATE Student SET ExamStatus=@ExamStatus WHERE RollNo=@RollNo;
+end;
+
+EXEC SetStudentExamStatus @RollNo=3;
+
+
+
+-- set ERD
+CREATE TABLE Qualification (
+    QualificationID INT IDENTITY(1, 1) PRIMARY KEY,
+    StaffID INT references Staff(StaffID),
+    CourseTitle VARCHAR(50),
+    DateCompleted DATE,
+    Status VARCHAR(10),
+    CHECK (Status IN ('COMPLETED', 'IN PROCESS', 'FAILED', 'REFUSED'))
+);
+
+CREATE TABLE AttendanceTeacher (
+    AttendanceTeacherID INT IDENTITY (1, 1) PRIMARY KEY,
+    ScheduleID INT REFERENCES Schedule(ScheduleID),
+    StartTime timestamp
+);
+CREATE TABLE Attendance (
+    AttendanceID INT IDENTITY (1,1) PRIMARY KEY,
+    RollNo INT REFERENCES Student(RollNo),
+    ScheduleID INT REFERENCES Schedule(ScheduleID),
+    Present INT,
+    CHECK (Present IN (1, 0))
+);
