@@ -150,7 +150,7 @@ SELECT FirstName,LastName, Title, StartTime, EndTime, RoomID FROM Student
     INNER JOIN Schedule S on Student.ClassID = S.ClassID
     INNER JOIN Subject S2 on S.SubjectID = S2.SubjectID
 
--- 1 Процедура оценивания персонала школы.
+-- 1
 -- Преподавательский состав школы состоит из сотрудников с полным высшим образованием.
 -- v Раз в три года каждый из учителей обязан пройти курсы повышения квалификации.
 -- v Прикрепленный триггер должен сработать в случае успешного завершения курсов и увеличить заработную плату сотрудников на 15%.
@@ -244,7 +244,7 @@ insert into qualification(staffid, coursetitle, datecompleted, status) values (3
 update qualification set status = 'REFUSED' where staffid = 3;
 
 
--- 2 Создайте процедуру проведения учебных занятий.
+-- 2
 -- v В школе не бывает накладок в расписании.
 -- v Все занятия проходят в строго отведенное время.
 -- v В случае нарушения любого из этих условий необходим вывод сообщения об ошибке.
@@ -342,3 +342,93 @@ EXECUTE FUNCTION check_payment();
 
 insert into attendance(rollno, scheduleid, present) VALUES (1, 22, True);
 insert into attendance(rollno, scheduleid, present) VALUES (3, 22, True);
+
+-- 6. У директора школы родители часто  спрашивают о своих детях. Количество детей с каждым годом все растет и
+-- v директору уже тяжело отвечать на вопросы. Чтобы автоматизировать процесс ответа, создайте таблицу плохих детей
+-- v которые не ходят на уроки или получают плохие оценки. Напишите функцию которая проверяет, состоит ли ребенок в этом
+-- v списке. Чтобы занести ребенка в этот список, проверьте чтобы у него было либо 6 пропусков либо больше трех двоек.
+-- v Если ребенок болел и принесет справку или исправит двойки - напишите триггер которая убирает его из этого списка
+
+
+create table badChilds(
+    badChild serial PRIMARY KEY ,
+    rollNo INT REFERENCES Student(RollNo),
+    reason varchar
+    CHECK (Reason IN ('Attendance', 'Grades'))
+);
+
+create table grades(
+    gradeId serial primary key ,
+    rollNo int references Student(rollno),
+    grade int,
+    check (grade in (1,2,3,4,5))
+);
+
+-- Функция для удаления ребенка из списка плохих детей:
+CREATE OR REPLACE FUNCTION remove_bad_child(p_rollNo INT)
+RETURNS VOID AS $$
+BEGIN
+    DELETE FROM badChilds
+    WHERE rollNo = p_rollNo;
+END;
+$$ LANGUAGE plpgsql;
+
+--Функция для проверки, состоит ли ребенок в списке плохих детей:
+CREATE OR REPLACE FUNCTION is_bad_child(p_rollNo INT)
+RETURNS BOOLEAN AS $$
+DECLARE
+    result BOOLEAN;
+BEGIN
+    SELECT EXISTS(SELECT 1 FROM badChilds WHERE rollNo = p_rollNo) INTO result;
+    RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+select * from is_bad_child(3);
+
+--
+CREATE OR REPLACE FUNCTION add_child_attendance()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.Present = FALSE AND (SELECT COUNT(*) FROM Attendance WHERE RollNo = NEW.RollNo AND Present = FALSE) >= 6
+         AND (SELECT COUNT(*) FROM badChilds WHERE  rollNo = NEW.rollno and reason = 'Attendance') = 0 THEN
+        INSERT INTO badChilds (rollNo, reason) VALUES (NEW.RollNo, 'Attendance');
+    ELSIF (SELECT COUNT(*) FROM Attendance WHERE RollNo = NEW.RollNo AND Present = FALSE) < 6 then
+        DELETE FROM badChilds WHERE rollNo = NEW.RollNo AND reason = 'Attendance';
+    END IF;
+
+    IF OLD.Present = FALSE AND NEW.Present = TRUE AND (SELECT COUNT(*) FROM Attendance WHERE RollNo = NEW.RollNo AND Present = FALSE) < 6 THEN
+        PERFORM remove_bad_child(NEW.RollNo);
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION add_child_grades()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.Grade = 2 AND (SELECT COUNT(*) FROM Grades WHERE RollNo = NEW.RollNo AND Grade = 2) >= 3
+           AND (SELECT COUNT(*) FROM badChilds WHERE  rollNo = NEW.rollno and reason = 'Grades') = 0 THEN
+        INSERT INTO badChilds (rollNo, reason) VALUES (NEW.RollNo, 'Grades');
+    ELSE
+        DELETE FROM badChilds WHERE rollNo = NEW.RollNo AND reason = 'Grades';
+    END IF;
+
+
+    IF OLD.Grade = 2 AND NEW.Grade IN (3, 4, 5) AND (SELECT COUNT(*) FROM Grades WHERE RollNo = NEW.RollNo AND Grade = 2) < 3 THEN
+        PERFORM remove_bad_child(NEW.RollNo);
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER add_or_remove_bad_child
+AFTER INSERT OR UPDATE ON Attendance
+    FOR EACH ROW
+    EXECUTE FUNCTION add_child_attendance();
+
+CREATE TRIGGER add_or_remove_bad_grades
+AFTER INSERT OR UPDATE ON Grades
+    FOR EACH ROW
+    EXECUTE FUNCTION add_child_grades();
