@@ -63,3 +63,21 @@ AFTER INSERT OR UPDATE ON product_review
 FOR EACH ROW
 EXECUTE FUNCTION recalculate_rate();
 
+
+-- 4
+-- Trigger to prevent an order from being canceled or refunded if it has already been delivered
+CREATE OR REPLACE FUNCTION check_order_status()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF OLD.status = 'DELIVERED' THEN
+        RAISE EXCEPTION 'Cannot cancel or refund an order that has already been delivered';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_order_status_trigger
+BEFORE UPDATE ON "order"
+FOR EACH ROW
+WHEN (NEW.status = 'CANCELED' OR NEW.status = 'REFUNDED')
+EXECUTE FUNCTION check_order_status();

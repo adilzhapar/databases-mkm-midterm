@@ -121,3 +121,4 @@ alter table "order" add column income_order_id int references "order"(order_id);
 alter table "order" drop constraint check_status;
 alter table "order" add constraint check_status check (status in ('PENDING', 'CANCELED', 'IN_PROCESS', 'DELIVERED'));
 alter table "order" alter column order_date drop not null, alter column order_date set default now(), alter column total_price set default 0;
+
