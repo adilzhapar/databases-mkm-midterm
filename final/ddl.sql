@@ -112,3 +112,10 @@ create table payment_transaction(
     amount int not null,
     constraint check_payment_method check (payment_method in ('CASH', 'CREDIT_CARD'))
 );
+
+alter table payment_transaction add column status varchar(50) default 'PENDING';
+alter table payment_transaction add constraint check_status check ( status in ('PENDING', 'SUCCESS', 'FAIL') );
+alter table payment_transaction drop constraint check_payment_method;
+alter table payment_transaction add constraint check_payment_method check (payment_method in ('CASH', 'CREDIT_CARD', 'CREDIT'));
+
+
