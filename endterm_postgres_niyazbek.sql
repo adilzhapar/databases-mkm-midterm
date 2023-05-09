@@ -152,12 +152,12 @@ SELECT FirstName,LastName, Title, StartTime, EndTime, RoomID FROM Student
 
 -- 1
 -- Преподавательский состав школы состоит из сотрудников с полным высшим образованием.
--- v Раз в три года каждый из учителей обязан пройти курсы повышения квалификации.
--- v Прикрепленный триггер должен сработать в случае успешного завершения курсов и увеличить заработную плату сотрудников на 15%.
--- v Учителя, не прошедшие курсы повышения квалификации, остаются на повторную сдачу через полгода,
--- v в период которого не допускаются к преподавательской деятельности.
--- v Отказ от прохождения курсов влечет за собой увольнение и
--- v полное удаление данных о преподавателе из базы данных школы. (1.2 pts)
+-- Раз в три года каждый из учителей обязан пройти курсы повышения квалификации.
+-- Прикрепленный триггер должен сработать в случае успешного завершения курсов и увеличить заработную плату сотрудников на 15%.
+-- Учителя, не прошедшие курсы повышения квалификации, остаются на повторную сдачу через полгода,
+-- в период которого не допускаются к преподавательской деятельности.
+-- Отказ от прохождения курсов влечет за собой увольнение и
+-- полное удаление данных о преподавателе из базы данных школы. (1.2 pts)
 
 CREATE TABLE Qualification (
     QualificationID serial PRIMARY KEY,
@@ -209,16 +209,18 @@ CREATE TRIGGER failedExam
     WHEN (OLD.Status = 'IN PROCESS' and NEW.Status = 'FAILED')
     EXECUTE FUNCTION deleteFromSchedule();
 
-SELECT s.ScheduleID,Staff.FirstName, Staff.LastName, Sj.title, S.StartTime
-FROM Staff
-    INNER JOIN Class C on Staff.StaffID = C.StaffID
-    INNER JOIN Schedule S on C.ClassID = S.ClassID
-    INNER JOIN Subject Sj ON S.SubjectID = Sj.SubjectID where C.StaffID=3
-
 insert into qualification(staffid, coursetitle, datecompleted, status) values (2, 'Databases' , '11.02.2023', 'IN PROCESS');
 update qualification set status = 'FAILED' where staffid = 2;
 insert into qualification(staffid, coursetitle, datecompleted, status) values (3, 'Databases' , '20.02.2023', 'IN PROCESS');
 update qualification set status = 'FAILED' where staffid = 3;
+
+
+SELECT s.ScheduleID,Staff.FirstName, Staff.LastName, Sj.title, S.StartTime
+FROM Staff
+    INNER JOIN Class C on Staff.StaffID = C.StaffID
+    INNER JOIN Schedule S on C.ClassID = S.ClassID
+    INNER JOIN Subject Sj ON S.SubjectID = Sj.SubjectID where C.StaffID=3;
+
 
 --Отказ от прохождения курсов
 CREATE OR REPLACE FUNCTION delete_staff() RETURNS TRIGGER
@@ -240,8 +242,8 @@ CREATE TRIGGER refusedExam
     EXECUTE FUNCTION delete_staff();
 
 
-insert into qualification(staffid, coursetitle, datecompleted, status) values (3, 'Databases' , '20.02.2023', 'IN PROCESS');
-update qualification set status = 'REFUSED' where staffid = 3;
+insert into qualification(staffid, coursetitle, datecompleted, status) values (2, 'Databases' , '20.02.2023', 'IN PROCESS');
+update qualification set status = 'REFUSED' where staffid = 2;
 
 
 -- 2
@@ -303,9 +305,9 @@ CREATE TRIGGER check_start_time_trigger
 AFTER INSERT ON AttendanceTeacher
 FOR EACH ROW
 EXECUTE FUNCTION check_start_time();
-insert into attendanceteacher(scheduleid, starttime) VALUES (22,'2023-02-22 10:00:00.000000')
+insert into attendanceteacher(scheduleid, starttime) VALUES (1,'2023-02-22 10:01:00.000000');
 
---удаляет их из списка присутствующих на занятиях до тех пор, пока не будет внесена оплата за обучение.
+
 
 -- CREATE OR REPLACE FUNCTION check_payment() RETURNS TRIGGER AS $$
 -- BEGIN
@@ -320,7 +322,7 @@ insert into attendanceteacher(scheduleid, starttime) VALUES (22,'2023-02-22 10:0
 --     END IF;
 -- END;
 -- $$ LANGUAGE plpgsql;
-
+--удаляет их из списка присутствующих на занятиях до тех пор, пока не будет внесена оплата за обучение.
 CREATE OR REPLACE FUNCTION check_payment() RETURNS TRIGGER AS $$
 BEGIN
     IF EXISTS (
@@ -340,8 +342,9 @@ BEFORE INSERT ON Attendance
 FOR EACH ROW
 EXECUTE FUNCTION check_payment();
 
-insert into attendance(rollno, scheduleid, present) VALUES (1, 22, True);
-insert into attendance(rollno, scheduleid, present) VALUES (3, 22, True);
+insert into attendance(rollno, scheduleid, present) VALUES (1, 1, True);
+insert into attendance(rollno, scheduleid, present) VALUES (3, 1, True);
+insert into attendance(rollno, scheduleid, present) VALUES (6, 1, True);
 
 -- 6. У директора школы родители часто  спрашивают о своих детях. Количество детей с каждым годом все растет и
 -- v директору уже тяжело отвечать на вопросы. Чтобы автоматизировать процесс ответа, создайте таблицу плохих детей
@@ -432,3 +435,24 @@ CREATE TRIGGER add_or_remove_bad_grades
 AFTER INSERT OR UPDATE ON Grades
     FOR EACH ROW
     EXECUTE FUNCTION add_child_grades();
+
+
+CREATE TABLE PotentialStudent (
+    id int primary key ,
+    FirstName VARCHAR(40),
+    LastName VARCHAR(40),
+    ExamResult INT
+);
+CREATE TABLE ExamResult (
+    ResultID serial PRIMARY KEY,
+    RollNo INT  REFERENCES Student(RollNo),
+    SubjectID INT REFERENCES Subject(SubjectID),
+    ExamDate timestamp,
+    Score FLOAT
+);
+
+create table studentExtra(
+    rollno integer not null references student(rollno),
+    subjectid integer not null references subject(subjectid),
+    primary key (rollno,subjectid)
+);
